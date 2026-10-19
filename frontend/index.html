@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quantum Computing Learning App — Rayyan Anwar</title>
+<style>
+:root{--bg:#f2f5f7;--surface:#fff;--ink:#14202b;--muted:#52606d;--rule:#d5dde3;--accent:#0b6e7f;--accent-ink:#fff;--err:#a61b1b;--bar:#8cc7d1;--c2:#b45f06}
+@media (prefers-color-scheme:dark){:root{--bg:#10171d;--surface:#18222b;--ink:#e8eef2;--muted:#9fb0bd;--rule:#2b3945;--accent:#5cc2d3;--accent-ink:#06222a;--err:#ff8c8c;--bar:#1f5b66;--c2:#f0b36b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:24px 16px 48px}h1{font-size:1.7rem;margin:0 0 4px}h2{font-size:1.15rem;margin:0 0 8px}
+p.lede{color:var(--muted);margin:0 0 16px;max-width:72ch}section{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:16px;margin:0 0 16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}label{display:block;font-weight:600;margin:4px 0 3px;font-size:.9rem}
+select,input,button{font:inherit;color:inherit}select,input[type=number]{padding:6px;border:1px solid var(--rule);border-radius:4px;background:var(--bg)}input[type=number]{width:90px}input[type=range]{width:100%}
+button{padding:8px 14px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:600;cursor:pointer}button.secondary{background:transparent;color:var(--accent)}button:disabled{opacity:.55}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}.status{min-height:1.5em;color:var(--muted);margin:8px 0 0}.status.error{color:var(--err);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;padding:0;list-style:none}.chips li{border:1px solid var(--rule);border-radius:14px;padding:2px 10px;font-size:.9rem}.chips li.cur{border-color:var(--accent);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{padding:4px 8px;border-bottom:1px solid var(--rule);text-align:right}th:first-child,td:first-child{text-align:left}
+.bar{display:inline-block;height:10px;background:var(--bar);vertical-align:middle;margin-right:6px;border-radius:2px}.note{color:var(--muted);font-size:.9rem}svg text{fill:var(--muted);font-size:10px}.expl{border-left:3px solid var(--accent);padding-left:10px;margin:10px 0}footer{color:var(--muted);font-size:.9rem}
+.blochs{display:flex;flex-wrap:wrap;gap:10px}.bloch{text-align:center;font-size:.85rem;color:var(--muted)}
+</style></head><body><main>
+<h1>Quantum Computing Learning App</h1>
+<p class="lede">Build a circuit one gate at a time and watch the state, probabilities, Bloch spheres and entanglement change. An ideal simulator: real quantum computers are noisy and limited.</p>
+<section aria-labelledby="b-h"><h2 id="b-h">Build</h2><div class="row">
+<div><label for="n">Qubits</label><input id="n" type="number" min="1" max="6" value="2"></div>
+<div><label for="pre">Example</label><select id="pre"><option value="">(choose)</option></select></div><button id="loadpre" class="secondary">Load example</button></div>
+<div class="row"><div><label for="gate">Gate</label><select id="gate"></select></div><div><label for="q1">Qubit / control</label><input id="q1" type="number" min="0" max="5" value="0"></div>
+<div><label for="q2">Target (2-qubit gates)</label><input id="q2" type="number" min="0" max="5" value="1"></div><div><label for="deg">Angle (degrees)</label><input id="deg" type="number" value="90"></div>
+<button id="add">Add gate</button><button id="undo" class="secondary">Undo</button><button id="clear" class="secondary">Clear</button></div>
+<p class="note" id="ginfo"></p><ul class="chips" id="chips" aria-label="Circuit gates in order"></ul>
+<p class="status" id="st" role="status">Add gates or load an example.</p></section>
+<section id="out" aria-labelledby="o-h"><h2 id="o-h">Watch the state</h2><label for="step">Step</label><input id="step" type="range" min="0" max="0" value="0"><p id="stlabel" class="note"></p>
+<div class="expl" id="expl"></div><div class="grid"><div><h3>Amplitudes and probabilities</h3><div class="scroll"><table id="amps"></table></div></div>
+<div><h3>Each qubit (Bloch sphere)</h3><div class="blochs" id="blochs"></div><p class="note" id="ent"></p></div></div></section>
+<section aria-labelledby="m-h"><h2 id="m-h">Measure</h2><div class="row"><div><label for="shots">Shots</label><input id="shots" type="number" min="1" max="100000" value="1024"></div><button id="meas">Measure final state</button></div>
+<div class="scroll"><table id="counts"></table></div><p class="note" id="cnote"></p></section>
+<footer><p><strong>About.</strong> Built by Rayyan Anwar (AI/ML Engineer | Researcher | Technology Manager | Software Developer). Educational tool; MIT licence. © Rayyan Anwar.</p></footer>
+</main><script>
+"use strict";
+const $=(i)=>document.getElementById(i),NS="http://www.w3.org/2000/svg";let gates=[],cat=[],R=null;
+function st(t,e){const x=$("st");x.textContent=t;x.className="status"+(e?" error":"")}
+function clear(n){while(n.firstChild)n.removeChild(n.firstChild)}
+function row(t,v,h){const tr=document.createElement("tr");for(const x of v){const c=document.createElement(h?"th":"td");if(x instanceof Node)c.appendChild(x);else c.textContent=x;tr.appendChild(c)}t.appendChild(tr)}
+async function api(p,b){const r=await fetch(p,b?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}:{});const d=await r.json().catch(()=>({}));
+ if(!r.ok){let m="Request failed ("+r.status+")";if(d.error&&d.error.message)m=d.error.message;else if(typeof d.detail==="string")m=d.detail;else if(Array.isArray(d.detail)&&d.detail[0])m=d.detail[0].loc.join(".")+": "+d.detail[0].msg;throw new Error(m)}return d}
+function el(tag,a,t){const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(a||{}))e.setAttribute(k,v);if(t!==undefined)e.textContent=t;return e}
+function bloch(b,i){const S=110,c=S/2,r=44,A=-0.6,E=0.35;const svg=el("svg",{viewBox:`0 0 ${S} ${S}`,width:S,height:S,role:"img","aria-label":`Bloch vector of qubit ${i}: x ${b[0].toFixed(2)}, y ${b[1].toFixed(2)}, z ${b[2].toFixed(2)}`});
+ const P=(x,y,z)=>{const x1=x*Math.cos(A)-y*Math.sin(A),y1=x*Math.sin(A)+y*Math.cos(A);return[c+r*x1,c-r*(z*Math.cos(E)+y1*Math.sin(E))]};
+ svg.appendChild(el("circle",{cx:c,cy:c,r:r,fill:"none",stroke:"var(--rule)"}));svg.appendChild(el("ellipse",{cx:c,cy:c,rx:r,ry:r*0.35,fill:"none",stroke:"var(--rule)","stroke-dasharray":"3 3"}));
+ for(const[a,l]of[[[0,0,1],"|0>"],[[0,0,-1],"|1>"],[[1,0,0],"x"],[[0,1,0],"y"]]){const p=P(...a);svg.appendChild(el("line",{x1:c,y1:c,x2:p[0],y2:p[1],stroke:"var(--rule)"}));svg.appendChild(el("text",{x:p[0]+2,y:p[1]-2},l))}
+ const t=P(b[0],b[1],b[2]);svg.appendChild(el("line",{x1:c,y1:c,x2:t[0],y2:t[1],stroke:"var(--accent)","stroke-width":2.5}));svg.appendChild(el("circle",{cx:t[0],cy:t[1],r:3.5,fill:"var(--accent)"}));
+ const w=document.createElement("div");w.className="bloch";w.appendChild(svg);const l=document.createElement("div");l.textContent="qubit "+i;w.appendChild(l);return w}
+function render(){if(!R)return;const k=parseInt($("step").value,10),s=R.steps[k];$("stlabel").textContent="Step "+k+" of "+(R.steps.length-1)+(s.gate?" · "+s.gate.name.toUpperCase()+" on "+s.gate.qubits.join(","):" · initial state");
+ $("expl").textContent=s.explanation;const t=$("amps");clear(t);row(t,["State","Amplitude","Probability"],true);
+ s.amplitudes.forEach((a,i)=>{if(s.probabilities[i]<1e-9)return;const bar=document.createElement("span");bar.className="bar";bar.style.width=(80*s.probabilities[i])+"px";const cell=document.createElement("span");cell.appendChild(bar);cell.appendChild(document.createTextNode((100*s.probabilities[i]).toFixed(1)+"%"));
+  row(t,["|"+R.labels[i]+">",a[0].toFixed(3)+(a[1]<0?" − ":" + ")+Math.abs(a[1]).toFixed(3)+"i",cell])});
+ const b=$("blochs");clear(b);s.bloch.forEach((v,i)=>b.appendChild(bloch(v,i)));
+ $("ent").textContent="Entanglement entropy per qubit (0 = independent, 1 = maximally entangled): "+s.entropy.map((e,i)=>"q"+i+" "+e.toFixed(2)).join(", ")}
+async function simulate(){try{R=await api("/api/simulate",{n_qubits:parseInt($("n").value,10),gates,shots:parseInt($("shots").value,10)});const sl=$("step");sl.max=R.steps.length-1;sl.value=R.steps.length-1;render();renderCounts();st(gates.length+" gate(s). Move the slider to replay.")}catch(e){st(e.message,true)}}
+function renderCounts(){const t=$("counts");clear(t);row(t,["Outcome","Count","Share"],true);for(const[k,v]of Object.entries(R.counts).sort())row(t,["|"+k+">",v,(100*v/R.shots).toFixed(1)+"%"]);$("cnote").textContent="Sampled from the exact final probabilities (seed "+R.seed+"). Counts vary between runs, as real measurements do."}
+function chips(){const u=$("chips");clear(u);gates.forEach((g,i)=>{const li=document.createElement("li");li.textContent=(i+1)+". "+g.name.toUpperCase()+" q"+g.qubits.join(",q")+(g.theta!==undefined?" θ="+g.theta.toFixed(2):"");u.appendChild(li)})}
+function ginfo(){const g=cat.find(x=>x.name===$("gate").value);if(g)$("ginfo").textContent=g.title+": "+g.text}
+$("gate").onchange=ginfo;
+$("add").onclick=()=>{const g=cat.find(x=>x.name===$("gate").value);const o={name:g.name,qubits:g.qubits===1?[parseInt($("q1").value,10)]:[parseInt($("q1").value,10),parseInt($("q2").value,10)]};if(g.param)o.theta=parseFloat($("deg").value)*Math.PI/180;gates.push(o);chips();simulate()};
+$("undo").onclick=()=>{gates.pop();chips();simulate()};$("clear").onclick=()=>{gates=[];chips();simulate()};$("step").oninput=render;$("meas").onclick=simulate;$("n").onchange=simulate;
+$("loadpre").onclick=async()=>{const id=$("pre").value;if(!id)return;const d=await api("/api/presets");const p=d.presets.find(x=>x.id===id);$("n").value=p.n_qubits;gates=p.gates.map(g=>Object.assign({},g));chips();await simulate();$("expl").textContent=p.description+" Expected: "+p.expect};
+(async()=>{try{cat=(await api("/api/gates")).gates;for(const g of cat){const o=document.createElement("option");o.value=g.name;o.textContent=g.name.toUpperCase()+" — "+g.title;$("gate").appendChild(o)}ginfo();
+ for(const p of (await api("/api/presets")).presets){const o=document.createElement("option");o.value=p.id;o.textContent=p.title;$("pre").appendChild(o)}await simulate()}catch(e){st(e.message,true)}})();
+</script></body></html>

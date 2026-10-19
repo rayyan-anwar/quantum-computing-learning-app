@@ -1,0 +1,71 @@
+{
+  "created_utc": "2026-10-17T13:06:35+00:00",
+  "environment": {
+    "platform": "Linux-6.18.44-fc-v139-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "numpy": "2.4.4",
+    "cpu_count": 1
+  },
+  "dense": {
+    "circuits": 300,
+    "qubits": "1-6",
+    "depth": 30,
+    "max_abs_amplitude_difference": 2.9504581591051765e-16
+  },
+  "unitarity": {
+    "gates_checked": 48,
+    "max_unitarity_error": 2.220446049250313e-16,
+    "circuits_depth_200": 50,
+    "max_norm_drift": 1.5543122344752192e-15
+  },
+  "analytic": {
+    "max_probability_error_by_example": {
+      "superposition": 0.0,
+      "interference": 0.0,
+      "bell": 0.0,
+      "ghz3": 0.0,
+      "grover2": 0.0
+    },
+    "teleportation_200_random_states_max_bloch_error": 0.0
+  },
+  "sampling": {
+    "trials": 1000,
+    "shots": 10000,
+    "false_rejection_rate_at_alpha_0.05": 0.046,
+    "expected": 0.05
+  },
+  "scaling": {
+    "2": {
+      "seconds_50_gates": 0.0017,
+      "state_MB": 0.0
+    },
+    "4": {
+      "seconds_50_gates": 0.0017,
+      "state_MB": 0.0
+    },
+    "6": {
+      "seconds_50_gates": 0.0014,
+      "state_MB": 0.001
+    },
+    "8": {
+      "seconds_50_gates": 0.0016,
+      "state_MB": 0.004
+    },
+    "10": {
+      "seconds_50_gates": 0.0024,
+      "state_MB": 0.016
+    },
+    "12": {
+      "seconds_50_gates": 0.004,
+      "state_MB": 0.062
+    },
+    "14": {
+      "seconds_50_gates": 0.0108,
+      "state_MB": 0.25
+    },
+    "16": {
+      "seconds_50_gates": 0.0357,
+      "state_MB": 1.0
+    }
+  }
+}
